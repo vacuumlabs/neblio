@@ -18,6 +18,8 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/scope_exit.hpp>
+#include "ledger/ledger.h"
+#include "ledger/utils.h"
 
 using namespace std;
 
@@ -1017,6 +1019,8 @@ void CWalletTx::GetAmounts(const ITxDB& txdb, list<pair<CTxDestination, CAmount>
             fIsMine = pwallet->IsMine(txout);
         } else if (!IsMineCheck((fIsMine = pwallet->IsMine(txout)), ISMINE_SPENDABLE))
             continue;
+        // } else if (!IsMineCheck((fIsMine = pwallet->IsMine(txout)), ISMINE_SPENDABLE_AVAILABLE))
+        //     continue;
 
         // In either case, we need to get the destination address
         CTxDestination address;
@@ -2233,6 +2237,7 @@ bool CWallet::CreateTransaction(const ITxDB& txdb, const vector<pair<CScript, CA
 
                 CKeyID changeKeyID;
 
+                // TODO GK - handle change differently for Ledger
                 if (nChange > 0 || ntp1TokenChangeExists) {
                     // Fill a vout to ourself
                     // TODO: pass in scriptChange instead of reservekey so
@@ -2333,6 +2338,11 @@ bool CWallet::CreateTransaction(const ITxDB& txdb, const vector<pair<CScript, CA
                     return false;
                 }
 
+                std::vector<std::tuple<std::vector<uint8_t>, uint32_t>> ledgerUtxos;
+                std::vector<CTxIn> ledgerInputs;
+                std::vector<CTxOut> ledgerPreviousOuts;
+                std::vector<CWalletTx> ledgerPreviousTxs;
+
                 // Sign
                 for (const PAIRTYPE(const CWalletTx*, unsigned int) & coin : setCoins) {
                     // find the output from the set in the list of inputs of the new tx
@@ -2349,10 +2359,80 @@ bool CWallet::CreateTransaction(const ITxDB& txdb, const vector<pair<CScript, CA
                         return false;
                     }
                     int nIn = std::distance(wtxNew.vin.begin(), it);
-                    if (SignSignature(*this, *coin.first, wtxNew, nIn) != SignatureState::Verified) {
-                        CreateErrorMsg(errorMsg, "Error while signing transactions inputs.");
-                        return false;
+
+                    if (IsMineCheck(::IsMine(*this, coin.first->vout[coin.second].scriptPubKey), ISMINE_LEDGER)) {
+                        auto previousTxTx = (CTransaction) *coin.first;
+
+                        CDataStream ssValue(SER_NETWORK, CLIENT_VERSION);
+                        ssValue.reserve(10000);
+                        ssValue << previousTxTx;
+
+                        auto serializedTx = std::vector<uint8_t>(ssValue.begin(), ssValue.end());
+
+                        // TODO GK - we also need to store a path for each input
+                        ledgerUtxos.push_back({serializedTx, coin.second});
+                        ledgerInputs.push_back(wtxNew.vin[nIn]);
+                        ledgerPreviousOuts.push_back(coin.first->vout[coin.second]);
+                        ledgerPreviousTxs.push_back(*coin.first);
                     }
+                    else {
+                        if (SignSignature(*this, *coin.first, wtxNew, nIn) != SignatureState::Verified) {
+                            CreateErrorMsg(errorMsg, "Error while signing transactions inputs.");
+                            return false;
+                        }
+
+                        // TODO GK - print pub key as well so we know what the signature and pub key look like
+                        std::cout << "Input script sig: " << ledger::utils::BytesToHex(wtxNew.vin[0].scriptSig) << std::endl;
+                        for (const auto &vout : wtxNew.vout) {
+
+                            std::cout << "vout scriptpubkey: " << ledger::utils::BytesToHex(vout.scriptPubKey) << std::endl;
+                        }
+                    }
+                }
+
+                if (!ledgerUtxos.empty()) {
+                    if (nFeeRet == 0) {
+                        nFeeRet = 20000;
+                        continue;
+                    }
+                    ledger::Ledger l(ledger::Transport::TransportType::SPECULOS);
+                    l.open();
+                    // TODO GK - set proper sign path
+                    auto signatures = l.SignTransaction(wtxNew, "m/44'/146'/0'/0/0", {"m/44'/146'/0'/0/0"}, ledgerUtxos);
+
+                    for (auto sigIndex = 0; sigIndex < signatures.size(); sigIndex++) {
+                        const auto &signature=signatures[sigIndex];
+
+                        auto txIn = &wtxNew.vin[sigIndex];
+
+                        std::cout << "Input script sig: " << std::get<0>(signature) << "1: " << ledger::utils::BytesToHex(std::get<1>(signature)) << std::endl;
+
+                        auto sig = std::get<1>(signature);
+                        sig.push_back(0x01);
+                        txIn->scriptSig << sig;
+                        auto pubKeyResult = l.GetPublicKey("m/44'/146'/0'/0/0", false);
+                        auto pubKey =CPubKey(ledger::utils::CompressPubKey(std::get<0>(pubKeyResult)));
+                        txIn->scriptSig << pubKey;
+
+                        auto pubKeyId = pubKey.GetID();
+                        
+                        std::cout << "pub key: " << ledger::utils::BytesToHex(ledger::utils::CompressPubKey(std::get<0>(pubKeyResult))) << std::endl;
+                        std::cout << "previous script pubg key: " << ledger::utils::BytesToHex(ledgerPreviousOuts[sigIndex].scriptPubKey) << std::endl;
+                        std::cout << "pub key id: " << ledger::utils::BytesToHex(std::vector<uint8_t>(pubKeyId.begin(), pubKeyId.end()));
+
+                        // if (!VerifyScript(txIn.scriptSig, ledgerPreviousOuts[sigIndex].scriptPubKey, ledgerPreviousTxs[sigIndex], sigIndex, true, false, 0).isOk()) {
+                        //    throw "script verification failed";
+                        // }
+
+                        // TODO GK - skoncene tu - toto neprechadza z nejakeho dovodu - neviem, ci zle parametre, zly podpis alebo co                            
+                        if (!VerifySignature(ledgerPreviousTxs[sigIndex], wtxNew, sigIndex, true, false, 0).isOk()) {
+                            CreateErrorMsg(errorMsg, "Signature verification failed.");
+                            return false;
+                        }
+
+                        std::cout << "Input script sig final: " << ledger::utils::BytesToHex(wtxNew.vin[sigIndex].scriptSig) << std::endl;
+                    }
+                    l.close();
                 }
 
                 // Limit size
@@ -2370,7 +2450,7 @@ bool CWallet::CreateTransaction(const ITxDB& txdb, const vector<pair<CScript, CA
                 CAmount nPayFee = nTransactionFee * (1 + (CAmount)nBytes / 1000) + NTP1Fee;
                 CAmount nMinFee = wtxNew.GetMinFee(txdb, 1, GMF_SEND, nBytes) + NTP1Fee;
 
-                if (nFeeRet < max(nPayFee, nMinFee)) {
+                if (ledgerUtxos.empty() && nFeeRet < max(nPayFee, nMinFee)) {
                     nFeeRet = max(nPayFee, nMinFee);
                     continue;
                 }
@@ -3318,6 +3398,8 @@ bool CWalletTx::IsTrusted(const ITxDB& txdb, const uint256& bestBlockHash) const
         const CTxOut& parentOut = parent->vout[txin.prevout.n];
         if (pwallet->IsMine(parentOut) != ISMINE_SPENDABLE)
             return false;
+        // if (pwallet->IsMine(parentOut) != ISMINE_SPENDABLE_AVAILABLE)
+        //     return false;
     }
 
     return true;
@@ -3452,6 +3534,10 @@ CAmount CWalletTx::GetUnspentCredit(const ITxDB& txdb, const uint256& bestBlockH
         const auto f = ISMINE_SPENDABLE_DELEGATED;
         credit += pwallet->GetCredit(bestBlockHash, txdb, *this, f, true);
     }
+    // if (filter & ISMINE_LEDGER) {
+    //     const auto f = ISMINE_LEDGER;
+    //     credit += pwallet->GetCredit(bestBlockHash, txdb, *this, f, true);
+    // }
     return credit;
 }
 

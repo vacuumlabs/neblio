@@ -18,6 +18,7 @@ using namespace boost;
 #include "sync.h"
 #include "util.h"
 #include "wallet.h"
+#include "ledger/utils.h"
 
 template <typename T>
 std::vector<unsigned char> ToByteVector(const T& in)
@@ -1090,6 +1091,9 @@ Result<void, ScriptError> EvalScript(vector<vector<unsigned char>>& stack, const
                     valtype& vchSig    = stacktop(-2);
                     valtype& vchPubKey = stacktop(-1);
 
+                    std::cout << "OP_CHECKSIG vchsig: " << ledger::utils::BytesToHex(vchSig) << std::endl;
+                    std::cout << "OP_CHECKSIG vchpub: " << ledger::utils::BytesToHex(vchPubKey) << std::endl;
+
                     // Subset of script starting at the most recent codeseparator
                     CScript scriptCode(pbegincodehash, pend);
 
@@ -1260,8 +1264,9 @@ uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int
     }
 
     // Serialize and hash
-    CHashWriter ss(SER_GETHASH, 0);
+    CHashWriter ss(SER_GETHASH, 0, true);
     ss << txTmp << nHashType;
+
     return ss.GetHash();
 }
 
@@ -1337,6 +1342,14 @@ bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CSc
     vchSig.pop_back();
 
     uint256 sighash = SignatureHash(scriptCode, txTo, nIn, nHashType);
+
+
+    CDataStream ssValue(SER_NETWORK, CLIENT_VERSION);
+    ssValue.reserve(10000);
+    ssValue << txTo;
+    std::cout << "txto: " << ledger::utils::BytesToHex(std::vector<uint8_t>(ssValue.begin(), ssValue.end())) << std::endl;
+
+    std::cout << "sighash: " << ledger::utils::BytesToHex(std::vector<uint8_t>(sighash.begin(), sighash.end())) << std::endl;
 
     if (signatureCache.Get(sighash, vchSig, vchPubKey))
         return true;
@@ -1478,6 +1491,8 @@ bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int n
     vchSig.push_back((unsigned char)nHashType);
     scriptSigRet << vchSig;
 
+    std::cout << "vchsig: " << ledger::utils::BytesToHex(vchSig) << std::endl;
+
     return true;
 }
 
@@ -1526,6 +1541,9 @@ bool Solver(const ITxDB& txdb, const CKeyStore& keystore, const CScript& scriptP
             CPubKey vch;
             keystore.GetPubKey(keyID, vch);
             scriptSigRet << vch;
+
+            std::cout << "vch: " << ledger::utils::BytesToHex(vch.Raw()) << std::endl;
+            std::cout << "scriptSigRet: " << ledger::utils::BytesToHex(scriptSigRet) << std::endl;
         }
         return true;
     case TX_SCRIPTHASH:
@@ -1660,6 +1678,7 @@ isminetype IsMine(const CKeyStore& keystore, const CScript& scriptPubKey)
     if (!Solver(CTxDB(), scriptPubKey, whichType, vSolutions))
         return isminetype::ISMINE_NO;
 
+    const CWallet *wallet = (CWallet*) &keystore;
     CKeyID keyID;
     switch (whichType) {
     case TX_NONSTANDARD:
@@ -1674,6 +1693,8 @@ isminetype IsMine(const CKeyStore& keystore, const CScript& scriptPubKey)
         keyID = CKeyID(uint160(vSolutions[0]));
         if (keystore.HaveKey(keyID))
             return isminetype::ISMINE_SPENDABLE;
+        if (wallet->HaveLedgerKey(keyID))
+            return isminetype::ISMINE_LEDGER;
         break;
     case TX_SCRIPTHASH: {
         CScript subscript;
@@ -1819,11 +1840,12 @@ bool ExtractDestinations(const ITxDB& txdb, const CScript& scriptPubKey, txnoutt
     return true;
 }
 
-Result<void, ScriptError> VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey,
+Result<void, ScriptError>  VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey,
                                        const CTransaction& txTo, unsigned int nIn,
                                        bool fValidatePayToScriptHash, bool fStrictEncodings,
                                        int nHashType)
 {
+    std::cout << "VerifyScript: " << std::endl << ledger::utils::BytesToHex(scriptSig) << std::endl <<  ledger::utils::BytesToHex(scriptPubKey) << std::endl;
 
     vector<vector<unsigned char>> stack, stackCopy;
 
@@ -1932,7 +1954,7 @@ Result<void, ScriptError> VerifySignature(const CTransaction& txFrom, const CTra
     const CTxOut& txout = txFrom.vout[txin.prevout.n];
 
     if (txin.prevout.hash != txFrom.GetHash())
-        return Err(ScriptError::SCRIPT_ERR_UNKNOWN_ERROR);
+         return Err(ScriptError::SCRIPT_ERR_UNKNOWN_ERROR);
 
     TRYV(VerifyScript(txin.scriptSig, txout.scriptPubKey, txTo, nIn, fValidatePayToScriptHash,
                       fStrictEncodings, nHashType));

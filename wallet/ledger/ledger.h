@@ -3,6 +3,7 @@
 #include "bytes.h"
 #include "transport.h"
 #include "tx.h"
+#include "wallet.h"
 
 namespace ledger
 {
@@ -27,7 +28,7 @@ namespace ledger
 		Error open();
 
 		std::tuple<bytes, std::string, bytes> GetPublicKey(const std::string &path, bool confirm);
-		std::vector<std::tuple<int, bytes>> SignTransaction(const std::string &address, uint64_t amount, uint64_t fees, const std::string &changePath, const std::vector<std::string> &signPaths, const std::vector<std::tuple<bytes, uint32_t>> &rawUtxos, uint32_t locktime);
+        std::vector<std::tuple<int, bytes>> SignTransaction(CWalletTx &wtxNew,const std::string& changePath,  const std::vector<std::string> &signPaths, const std::vector<std::tuple<bytes, uint32_t>> &rawUtxos);
 
 		void close();
 
@@ -35,11 +36,11 @@ namespace ledger
 		std::unique_ptr<Transport> transport_;
 
 		std::tuple<Error, bytes> ProcessScriptBlocks(const bytes &script, uint32_t sequence);
-		std::tuple<Error, bytes> GetTrustedInput(uint32_t indexLookup, Tx tx);
+		std::tuple<Error, bytes> GetTrustedInput(const CWalletTx& wtxNew, uint32_t indexLookup, Tx tx);
 		std::tuple<Error, bytes> GetTrustedInput(uint32_t indexLookup, const bytes &serializedTransaction);
 		std::tuple<Error, bytes> GetTrustedInputRaw(bool firstRound, uint32_t indexLookup, const bytes &data);
-		void UntrustedHashTxInputFinalize(Tx tx, const std::string &changePath);
-		void UntrustedHashTxInputStart(Tx tx, const std::vector<TrustedInput> &trustedInputs, int inputIndex, bytes script, bool isNewTransaction);
+		void UntrustedHashTxInputFinalize(const CWalletTx wtxNew, const std::string &changePath);
+		void UntrustedHashTxInputStart(const CWalletTx wtxNew, const std::vector<TrustedInput> &trustedInputs, int inputIndex, bytes script, bool isNewTransaction);
 		TrustedInput DeserializeTrustedInput(const bytes &serializedTrustedInput);
 	};
 }

@@ -7,6 +7,7 @@
 
 #include "serialize.h"
 #include "uint256.h"
+#include "ledger/utils.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -31,17 +32,24 @@ class CHashWriter
 {
 private:
     SHA256_CTX ctx;
+    std::vector<uint8_t> body;
 
 public:
     int nType;
     int nVersion;
+    bool log;
 
     void Init() { SHA256_Init(&ctx); }
 
-    CHashWriter(int nTypeIn, int nVersionIn) : nType(nTypeIn), nVersion(nVersionIn) { Init(); }
+    CHashWriter(int nTypeIn, int nVersionIn, bool logIn = false) : nType(nTypeIn), nVersion(nVersionIn), log(logIn) { Init(); }
 
     CHashWriter& write(const char* pch, size_t size)
     {
+        if (log) {
+        for (auto i = 0; i < size; i++)
+            body.push_back(*(pch+i));
+        }
+
         SHA256_Update(&ctx, pch, size);
         return (*this);
     }
@@ -49,10 +57,20 @@ public:
     // invalidates the object
     uint256 GetHash()
     {
+        if (log)
+            std::cout << "Body: " << ledger::utils::BytesToHex(body) << std::endl;
+
         uint256 hash1;
         SHA256_Final((unsigned char*)&hash1, &ctx);
+
+        if (log)
+            std::cout << "Hash1: " << ledger::utils::BytesToHex(std::vector<uint8_t>(hash1.begin(), hash1.end())) << std::endl;
+
         uint256 hash2;
         SHA256((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
+        if (log)
+            std::cout << "Hash2: " << ledger::utils::BytesToHex(std::vector<uint8_t>(hash2.begin(), hash2.end())) << std::endl;
+
         return hash2;
     }
 

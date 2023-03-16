@@ -5,6 +5,7 @@
 #include "base58.h"
 #include "bip32.h"
 #include "tx.h"
+#include "wallet.h"
 
 #include <algorithm>
 #include <iostream>
@@ -70,11 +71,14 @@ namespace ledger
 		return {err, bytes(buffer.begin(), buffer.end())};
 	}
 
-	std::tuple<Error, bytes> Ledger::GetTrustedInput(uint32_t indexLookup, Tx tx)
+    std::tuple<Error, bytes> Ledger::GetTrustedInput(const CWalletTx& wtxNew, uint32_t indexLookup, Tx tx)
 	{
 		bytes serializedTransaction;
-		utils::AppendUint32(serializedTransaction, tx.version, true);
-		utils::AppendUint32(serializedTransaction, tx.time, true);
+        utils::AppendUint32(serializedTransaction, tx.version, true);
+        utils::AppendUint32(serializedTransaction, tx.time, true);
+        // std::cout << "Serialized tx time: " << tx.time << std::endl;
+        // std::cout << "Serialized WTX time: " << wtxNew.nTime << std::endl;
+        // std::cout << "Serialized tx with time: " << ledger::utils::BytesToHex(serializedTransaction) << std::endl;
 
 		utils::AppendVector(serializedTransaction, utils::CreateVarint(tx.inputs.size()));
 		for (auto input : tx.inputs)
@@ -133,7 +137,7 @@ namespace ledger
 		return {Error::SUCCESS, finalResults};
 	}
 
-	void Ledger::UntrustedHashTxInputFinalize(Tx tx, const std::string &changePath)
+	void Ledger::UntrustedHashTxInputFinalize(const CWalletTx wtxNew, const std::string &changePath)
 	{
 		auto ins = APDU::INS_UNTRUSTED_HASH_TRANSACTION_INPUT_FINALIZE;
 		auto p2 = 0x00;
@@ -163,21 +167,21 @@ namespace ledger
 		}
 
 		p1 = 0x00;
-		auto result = transport_->exchange(APDU::CLA, ins, p1, p2, utils::CreateVarint(tx.outputs.size()));
-		auto err = std::get<0>(result);
-		auto buffer = std::get<1>(result);
-		if (err != Error::SUCCESS)
-			throw err;
+        auto result = transport_->exchange(APDU::CLA, ins, p1, p2, utils::CreateVarint(wtxNew.vout.size()));
+        auto err = std::get<0>(result);
+        auto buffer = std::get<1>(result);
+        if (err != Error::SUCCESS)
+            throw err;
 
-		for (auto i = 0; i < tx.outputs.size(); i++)
+		for (auto i = 0; i < wtxNew.vout.size(); i++)
 		{
-			p1 = i < tx.outputs.size() - 1 ? 0x00 : 0x80;
+			p1 = i < wtxNew.vout.size() - 1 ? 0x00 : 0x80;
 
-			auto output = tx.outputs[i];
+			auto output = wtxNew.vout[i];
 			bytes outputData;
-			utils::AppendUint64(outputData, output.amount, true);
-			utils::AppendVector(outputData, utils::CreateVarint(output.script.size()));
-			utils::AppendVector(outputData, output.script);
+            utils::AppendUint64(outputData, output.nValue, true);
+            utils::AppendVector(outputData, utils::CreateVarint(output.scriptPubKey.size()));
+			utils::AppendVector(outputData, output.scriptPubKey);
 
 			auto result = transport_->exchange(APDU::CLA, ins, p1, p2, outputData);
 			auto err = std::get<0>(result);
@@ -187,15 +191,15 @@ namespace ledger
 		}
 	}
 
-	void Ledger::UntrustedHashTxInputStart(Tx tx, const std::vector<TrustedInput> &trustedInputs, int inputIndex, bytes script, bool isNewTransaction)
+	void Ledger::UntrustedHashTxInputStart(const CWalletTx wtxNew, const std::vector<TrustedInput> &trustedInputs, int inputIndex, bytes script, bool isNewTransaction)
 	{
 		auto ins = APDU::INS_UNTRUSTED_HASH_TRANSACTION_INPUT_START;
 		auto p1 = 0x00;
-		auto p2 = isNewTransaction ? 0x02 : 0x80;
+		auto p2 = isNewTransaction ? 0x00 : 0x80;
 
 		bytes data;
-		utils::AppendUint32(data, tx.version, true);
-		utils::AppendUint32(data, tx.time, true);
+		utils::AppendUint32(data, wtxNew.nVersion, true);
+		utils::AppendUint32(data, wtxNew.nTime, true);
 		utils::AppendVector(data, utils::CreateVarint(trustedInputs.size()));
 
 		auto result = transport_->exchange(APDU::CLA, ins, p1, p2, data);
@@ -210,9 +214,15 @@ namespace ledger
 			auto trustedInput = trustedInputs[i];
 			auto _script = i == inputIndex ? script : bytes();
 
+            auto input = wtxNew.vin[i];
+
+            std::cout<<"trustedInput: " << ledger::utils::BytesToHex(trustedInput.serialized) << std::endl;
+            std::cout<<"input prevout hash: " << ledger::utils::BytesToHex(std::vector<uint8_t>(input.prevout.hash.begin(), input.prevout.hash.end())) << std::endl;
+            std::cout<<"input prevout n: " << input.prevout.n << std::endl;
+
 			bytes _data;
 			_data.push_back(0x01);
-			_data.push_back(trustedInput.serialized.size());
+            _data.push_back(trustedInput.serialized.size());
 			utils::AppendVector(_data, trustedInput.serialized);
 			utils::AppendVector(_data, utils::CreateVarint(_script.size()));
 
@@ -224,7 +234,7 @@ namespace ledger
 
 			bytes scriptData;
 			utils::AppendVector(scriptData, _script);
-			utils::AppendUint32(scriptData, 0xfffffffd, true);
+            utils::AppendUint32(scriptData, 0xffffffff, true);
 
 			result = transport_->exchange(APDU::CLA, ins, p1, p2, scriptData);
 			err = std::get<0>(result);
@@ -234,116 +244,156 @@ namespace ledger
 		}
 	}
 
-	std::vector<std::tuple<int, bytes>> Ledger::SignTransaction(const std::string &address, uint64_t amount, uint64_t fees, const std::string &changePath, const std::vector<std::string> &signPaths, const std::vector<std::tuple<bytes, uint32_t>> &rawUtxos, uint32_t locktime)
+    std::vector<std::tuple<int, bytes>> Ledger::SignTransaction(CWalletTx& wtxNew, const std::string& changePath, const std::vector<std::string> &signPaths, const std::vector<std::tuple<bytes, uint32_t>> &rawUtxos)
 	{
-		Tx tx;
-		tx.version = 2;
-		tx.time = 0;
-		tx.locktime = locktime;
+		// Tx tx;
+		// tx.version = 2;
+		// tx.time = wtxNew.nTime;
+        // tx.locktime = wtxNew.nLockTime;
 
 		// build UTxOs and count amount available
 		std::vector<Utxo> utxos;
-		uint64_t amountAvailable = 0;
+		// uint64_t amountAvailable = 0;
 		for (const auto &rawUtxo : rawUtxos)
 		{
 			Utxo utxo;
 			utxo.raw = std::get<0>(rawUtxo);
 			utxo.index = std::get<1>(rawUtxo);
 
+            std::cout << "Raw UTxOTx: " << ledger::utils::BytesToHex(utxo.raw) << std::endl;
+
 			auto utxoTx = ledger::DeserializeTransaction(utxo.raw);
 			utxo.tx = utxoTx;
 
+            std::cout << "UTxOTx time: " << utxo.tx.time << std::endl;
+
 			utxos.push_back(utxo);
 
-			auto amount = utxoTx.outputs[utxo.index].amount;
-			amountAvailable += amount;
+			// auto amount = utxoTx.outputs[utxo.index].amount;
+			// amountAvailable += amount;
 		}
 
 		// get trusted inputs
 		std::vector<TrustedInput> trustedInputs;
+		std::vector<TxInput> inputs;
+        std::vector<std::tuple<int, bytes>> signatures;
 		for (auto i = 0; i < utxos.size(); i++)
 		{
 			const auto &utxo = utxos[i];
 
-			const auto serializedTrustedInputResult = GetTrustedInput(utxo.index, utxo.tx);
-			auto trustedInput = ledger::DeserializeTrustedInput(std::get<1>(serializedTrustedInputResult));
+            const auto serializedTrustedInputResult = GetTrustedInput(wtxNew, utxo.index, utxo.tx);
+            const auto serializedTrustedInput = std::get<1>(serializedTrustedInputResult);
+            auto trustedInput = ledger::DeserializeTrustedInput(serializedTrustedInput);
 
 			TxInput txInput;
-			txInput.prevout = trustedInput.prevTxId;
+			// txInput.prevout = trustedInput.prevTxId;
 
-			auto publicKeyResult = GetPublicKey(signPaths[i], false);
-			auto publicKey = utils::CompressPubKey(std::get<0>(publicKeyResult));
+			// auto publicKeyResult = GetPublicKey(signPaths[i], false);
+			// auto publicKey = utils::CompressPubKey(std::get<0>(publicKeyResult));
 
-			auto pubKeyHash = Hash160(publicKey);
-			bytes pubKeyHashVector(pubKeyHash.begin(), pubKeyHash.end());
+			// auto pubKeyHash = Hash160(publicKey);
+			// bytes pubKeyHashVector(pubKeyHash.begin(), pubKeyHash.end());
 
-			bytes finalScriptPubKey;
-			finalScriptPubKey.push_back(0x76);
-			finalScriptPubKey.push_back(0xa9);
-			finalScriptPubKey.push_back(0x14);
-			utils::AppendVector(finalScriptPubKey, pubKeyHashVector);
-			finalScriptPubKey.push_back(0x88);
-			finalScriptPubKey.push_back(0xac);
+			// bytes finalScriptPubKey;
+			// finalScriptPubKey.push_back(0x76);
+			// finalScriptPubKey.push_back(0xa9);
+			// finalScriptPubKey.push_back(0x14);
+			// utils::AppendVector(finalScriptPubKey, pubKeyHashVector);
+			// finalScriptPubKey.push_back(0x88);
+			// finalScriptPubKey.push_back(0xac);
 
-			txInput.script = finalScriptPubKey;
-			txInput.sequence = 0xfffffffd;
+			// txInput.script = finalScriptPubKey;
+			// txInput.sequence = 0xfffffffd;
+
+			// std::cout << "vin script sig: " << ledger::utils::BytesToHex(wtxNew.vin[i].scriptSig) << std::endl;
+			// std::cout << "utxo script   : " << ledger::utils::BytesToHex(utxo.tx.outputs[utxo.index].script) << std::endl;
+			// std::cout << "finalScriptPub: " << ledger::utils::BytesToHex(finalScriptPubKey) << std::endl;
+			
+            // CDataStream ssValue(SER_NETWORK, CLIENT_VERSION);
+            // ssValue.reserve(10000);
+            // ssValue << wtxNew.vin[i].prevout;
+
+            // txInput.prevout = std::vector<uint8_t>(ssValue.begin(), ssValue.end());
+        //    std::cout << "WtxNew " << i << " prevout: " << ledger::utils::BytesToHex(std::vector<uint8_t>(wtxNew.vin[i].prevout.hash.begin(), wtxNew.vin[i].prevout.hash.end()))<< std::endl;
+           wtxNew.vin[i].prevout.hash = uint256(trustedInput.prevTxId);
+           wtxNew.vin[i].prevout.n = trustedInput.outIndex;
+           txInput.prevout = std::vector<uint8_t>(serializedTrustedInput.begin()+4,serializedTrustedInput.begin()+4+0x24);
+            txInput.script = utxo.tx.outputs[utxo.index].script;
+			txInput.sequence = wtxNew.vin[i].nSequence;
+
+
+           std::cout << "WtxNew " << i << " prevout: " << ledger::utils::BytesToHex(std::vector<uint8_t>(wtxNew.vin[i].prevout.hash.begin(), wtxNew.vin[i].prevout.hash.end()))<< std::endl;
+           std::cout << "tx " << i << " prevout: " << ledger::utils::BytesToHex(txInput.prevout)<< std::endl;
 
 			trustedInputs.push_back(trustedInput);
-			tx.inputs.push_back(txInput);
+            inputs.push_back(txInput);
 		}
 
 		// create change output
-		if (amountAvailable - fees > amount)
+		// if (amountAvailable - fees > amount)
+		// {
+		// 	auto publicKeyResult = GetPublicKey(changePath, false);
+		// 	auto publicKey = utils::CompressPubKey(std::get<0>(publicKeyResult));
+		// 	auto publicKeyHash = Hash160(publicKey);
+
+		// 	// TODO GK - other key structures?
+		// 	bytes changeScriptPublicKey;
+		// 	changeScriptPublicKey.push_back(0x76);
+		// 	changeScriptPublicKey.push_back(0xa9);
+		// 	changeScriptPublicKey.push_back(0x14);
+		// 	utils::AppendVector(changeScriptPublicKey, bytes(publicKeyHash.begin(), publicKeyHash.end()));
+		// 	changeScriptPublicKey.push_back(0x88);
+		// 	changeScriptPublicKey.push_back(0xac);
+
+        //     TxOutput txChangeOutput;
+        //     txChangeOutput.amount = amountAvailable - amount - fees;
+		// 	txChangeOutput.script = changeScriptPublicKey;
+		// 	tx.outputs.push_back(txChangeOutput);
+		// }
+
+		// // create output to address
+		// // TODO GK - other key structures?
+		// bytes scriptPublicKey;
+		// scriptPublicKey.push_back(0x76);
+		// scriptPublicKey.push_back(0xa9);
+		// scriptPublicKey.push_back(0x14);
+		// auto addressDecoded = Base58Decode(address);
+		// utils::AppendVector(scriptPublicKey, bytes(addressDecoded.begin() + 1, addressDecoded.end() - 4));
+		// scriptPublicKey.push_back(0x88);
+		// scriptPublicKey.push_back(0xac);
+
+
+		// for (const auto &vout:wtxNew.vout)
+		// {
+		// 	TxOutput txOutput;
+		// 	txOutput.amount = vout.nValue;
+		// 	txOutput.script = vout.scriptPubKey;
+		// 	tx.outputs.push_back(txOutput);
+		// }
+
+		// TxOutput txOutput;
+		// txOutput.amount = amount;
+		// txOutput.script = scriptPublicKey;
+		// tx.outputs.push_back(txOutput);
+
+		// TODO GK - refactor to use wtxNew
+		for (auto i = 0; i < inputs.size(); i++)
 		{
-			auto publicKeyResult = GetPublicKey(changePath, false);
-			auto publicKey = utils::CompressPubKey(std::get<0>(publicKeyResult));
-			auto publicKeyHash = Hash160(publicKey);
+			std::cout << "Input " << i << " prevout: " << ledger::utils::BytesToHex(inputs[i].prevout)<< std::endl;
+			std::cout << "Input " << i << " script: " << ledger::utils::BytesToHex(inputs[i].script)<< std::endl;
+			std::cout << "Input " << i << " sequence: " << inputs[i].sequence<< std::endl;
 
-			// TODO GK - other key structures?
-			bytes changeScriptPublicKey;
-			changeScriptPublicKey.push_back(0x76);
-			changeScriptPublicKey.push_back(0xa9);
-			changeScriptPublicKey.push_back(0x14);
-			utils::AppendVector(changeScriptPublicKey, bytes(publicKeyHash.begin(), publicKeyHash.end()));
-			changeScriptPublicKey.push_back(0x88);
-			changeScriptPublicKey.push_back(0xac);
+			std::cout << "WtxNew " << i << " prevout: " << ledger::utils::BytesToHex(std::vector<uint8_t>(wtxNew.vin[i].prevout.hash.begin(), wtxNew.vin[i].prevout.hash.end()))<< std::endl;
+			std::cout << "WtxNew " << i << " script: " << ledger::utils::BytesToHex(wtxNew.vin[i].scriptSig)<< std::endl;
+			std::cout << "WtxNew " << i << " sequence: " << wtxNew.vin[i].nSequence << std::endl;
+            UntrustedHashTxInputStart(wtxNew, trustedInputs, i, inputs[i].script, i == 0);
+//        }
 
-			TxOutput txChangeOutput;
-			// TODO GK - fix amount
-			txChangeOutput.amount = amount - fees;
-			txChangeOutput.script = changeScriptPublicKey;
-			tx.outputs.push_back(txChangeOutput);
-		}
+        UntrustedHashTxInputFinalize(wtxNew, changePath);
 
-		// create output to address
-		// TODO GK - other key structures?
-		bytes scriptPublicKey;
-		scriptPublicKey.push_back(0x76);
-		scriptPublicKey.push_back(0xa9);
-		scriptPublicKey.push_back(0x14);
-		auto addressDecoded = Base58Decode(address);
-		utils::AppendVector(scriptPublicKey, bytes(addressDecoded.begin() + 1, addressDecoded.end() - 4));
-		scriptPublicKey.push_back(0x88);
-		scriptPublicKey.push_back(0xac);
-
-		TxOutput txOutput;
-		txOutput.amount = amount;
-		txOutput.script = scriptPublicKey;
-		tx.outputs.push_back(txOutput);
-
-		for (auto i = 0; i < tx.inputs.size(); i++)
-		{
-			UntrustedHashTxInputStart(tx, trustedInputs, i, tx.inputs[i].script, i == 0);
-		}
-
-		UntrustedHashTxInputFinalize(tx, changePath);
-
-		std::vector<std::tuple<int, bytes>> signatures;
-		for (auto i = 0; i < tx.inputs.size(); i++)
-		{
-			UntrustedHashTxInputStart(tx, {trustedInputs[i]}, 0, tx.inputs[i].script, false);
-
-			auto amount = tx.outputs[i].amount;
+//        for (auto i = 0; i < inputs.size(); i++)
+//        {
+//            UntrustedHashTxInputStart(wtxNew, {trustedInputs[i]}, 0, inputs[i].script, false);
 
 			auto ins = INS_UNTRUSTED_HASH_SIGN;
 			auto p1 = 0x00;
@@ -355,7 +405,7 @@ namespace ledger
 			data.push_back(serializedChangePath.size() / 4);
 			utils::AppendVector(data, serializedChangePath);
 			data.push_back(0x00);
-			utils::AppendUint32(data, locktime);
+			utils::AppendUint32(data, wtxNew.nLockTime);
 			data.push_back(0x01);
 
 			auto result = transport_->exchange(APDU::CLA, ins, p1, p2, data);
@@ -369,11 +419,11 @@ namespace ledger
 				bytes data;
 				data.push_back(0x30);
 				utils::AppendVector(data, bytes(buffer.begin() + 1, buffer.end()));
-				signatures.push_back({{1}, data});
+				signatures.push_back({1, data});
 			}
 			else
 			{
-				signatures.push_back({{0}, buffer});
+				signatures.push_back({0, buffer});
 			}
 		}
 
