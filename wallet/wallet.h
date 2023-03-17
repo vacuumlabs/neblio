@@ -490,6 +490,26 @@ public:
         }
         return false;
     }
+
+    bool GetMaxLedgerKeyPathItems(uint32_t &account, uint32_t &index) const
+    {
+        const CLedgerKey *maxKey = nullptr;
+        {
+            LOCK(cs_LedgerKeyStore);
+            if (ledgerKeys.empty())
+                return false;
+            std::map<CKeyID, CLedgerKey> ::const_iterator mi = ledgerKeys.begin();
+            while (mi != ledgerKeys.end())
+            {
+                if (maxKey == nullptr || maxKey->pathItemsLessThan((*mi).second))
+                    maxKey = &(*mi).second;
+                mi++;
+            }
+        }
+        account = maxKey->account;
+        index = maxKey->index;
+        return true;
+    }
 };
 
 /** A key allocated from the key pool. */

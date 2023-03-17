@@ -260,6 +260,15 @@ bool AddressTableModel::isWhitelisted(const std::string& address) const
     return purposeForAddress(address).compare(AddressBook::AddressBookPurpose::DELEGATOR) == 0;
 }
 
+std::pair<uint32_t, uint32_t> AddressTableModel::getNextLedgerPathItems() const
+{
+    uint32_t account = 0;
+    uint32_t index   = 0;
+    if (wallet->GetMaxLedgerKeyPathItems(account, index))
+        return std::make_pair(account, index + 1);
+    return std::make_pair(0, 0);
+}
+
 bool AddressTableModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
     if (!index.isValid())

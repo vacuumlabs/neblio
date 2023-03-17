@@ -82,6 +82,8 @@ public:
 
     bool isWhitelisted(const std::string& address) const;
 
+    std::pair<uint32_t, uint32_t> getNextLedgerPathItems() const;
+
 private:
     WalletModel*      walletModel;
     CWallet*          wallet;

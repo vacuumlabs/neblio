@@ -50,6 +50,16 @@ public:
     CLedgerKey(const CPubKey& vchPubKeyIn, uint32_t accountIn, uint32_t indexIn) :
         vchPubKey(vchPubKeyIn), account(accountIn), index(indexIn) {};
 
+    // comparison based on account and index
+    bool pathItemsLessThan(const CLedgerKey& other) const
+    {
+        if (account < other.account)
+            return true;
+        if (account > other.account)
+            return false;
+        return index < other.index;
+    };
+
     IMPLEMENT_SERIALIZE(READWRITE(vchPubKey); READWRITE(account); READWRITE(index);)
 };
 

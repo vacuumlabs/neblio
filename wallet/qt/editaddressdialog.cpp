@@ -52,8 +52,9 @@ EditAddressDialog::EditAddressDialog(Mode modeIn, QWidget *parent) :
     ui->ledgerInfoLabel->setVisible(false);
 
     // Ledger account and index defaults and validators
-    ui->ledgerAccountEdit->setText("0");
-    ui->ledgerIndexEdit->setText("0");
+    auto defaultItems = model->getNextLedgerPathItems();
+    ui->ledgerAccountEdit->setText(QString::number(defaultItems.first));
+    ui->ledgerIndexEdit->setText(QString::number(defaultItems.second));
     GUIUtil::setupIntWidget(ui->ledgerAccountEdit, this, 0, ledger::utils::MAX_RECOMMENDED_ACCOUNT);
     GUIUtil::setupIntWidget(ui->ledgerIndexEdit, this, 0, ledger::utils::MAX_RECOMMENDED_INDEX);
 }
