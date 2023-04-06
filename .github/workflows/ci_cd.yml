@@ -42,7 +42,7 @@ jobs:
   #       path: /tmp/bitcoin*
 
   linux_daemon:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v1
     - name: ccache
@@ -70,7 +70,7 @@ jobs:
 
 
   linux_wallet:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v1
     - name: ccache

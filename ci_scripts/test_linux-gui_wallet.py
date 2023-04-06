@@ -19,7 +19,7 @@ args = parser.parse_args()
 packages_to_install = \
 [
 "ccache",
-"qt5-default",
+"qtbase5-dev",
 "qt5-qmake",
 "qtbase5-dev-tools",
 "qttools5-dev-tools",
