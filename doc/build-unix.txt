@@ -22,13 +22,14 @@ the graphical neblio.
 Dependencies
 ------------
 
- Library     Purpose           Description
- -------     -------           -----------
- libssl      SSL Support       Secure communications
- libdb       Berkeley DB       Blockchain & wallet storage
- libboost    Boost             C++ Library
- miniupnpc   UPnP Support      Optional firewall-jumping support
- libqrencode QRCode generation Optional QRCode generation
+ Library     Purpose            Description
+ -------     -------            -----------
+ libssl      SSL Support        Secure communications
+ libdb       Berkeley DB        Blockchain & wallet storage
+ libboost    Boost              C++ Library
+ miniupnpc   UPnP Support       Optional firewall-jumping support
+ libqrencode QRCode generation  Optional QRCode generation
+ libhidapi   Ledger USB support Used to communicate with the Ledger hardware wallet
 
 Note that libexecinfo should be installed, if you building under *BSD systems.
 This library provides backtrace facility.
@@ -58,6 +59,7 @@ Versions used in this release:
  Berkeley DB   5.3.28.NC
  Boost         1.55.0
  miniupnpc     1.9.20140401
+ hidapi        0.11.2-1
 
 Dependency Build Instructions: Ubuntu & Debian
 ----------------------------------------------
@@ -66,6 +68,7 @@ sudo apt-get install libssl-dev
 sudo apt-get install libdb++-dev
 sudo apt-get install libboost-all-dev
 sudo apt-get install libqrencode-dev
+sudo apt-get install libhidapi-dev
 
 If using Boost 1.37, append -mt to the boost libraries in the makefile.
 

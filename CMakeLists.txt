@@ -124,6 +124,7 @@ find_package(PkgConfig        REQUIRED)
 find_package(Boost 1.65       COMPONENTS system random filesystem thread regex program_options iostreams atomic REQUIRED)
 find_package(Threads          REQUIRED)
 find_package(sodium           REQUIRED)
+find_package(HIDAPI           REQUIRED)
 
 set(ATOMIC32_TEST_CODE "
     #include <atomic>
@@ -595,6 +596,7 @@ add_library(gui_lib STATIC
     wallet/qt/votesdatamodel.cpp
     wallet/qt/votesdataview.cpp
     wallet/qt/votestablecelldelegate.cpp
+    wallet/ledger/messagebox.cpp
     ${QRCODE_SOURCES}
     )
 
@@ -740,6 +742,16 @@ add_library(core_lib STATIC
     wallet/blockmetadata.cpp
     wallet/blockindexlrucache.cpp
     wallet/proposal.cpp
+    wallet/ledger/bytes.h
+    wallet/ledger/bip32.cpp
+    wallet/ledger/error.cpp
+    wallet/ledger/hid.cpp
+    wallet/ledger/ledger.cpp
+    wallet/ledger/speculos.cpp
+    wallet/ledger/transport.cpp
+    wallet/ledger/tx.cpp
+    wallet/ledger/utils.cpp
+    wallet/ledgerBridge.cpp
     )
 
 target_link_libraries(core_lib
@@ -750,6 +762,7 @@ target_link_libraries(core_lib
     db_lib
     utils_lib
     ${ATOMIC_LINKER_LIBS}
+    ${HIDAPI_LIBRARIES}
     )
 
 add_library(curltools_lib STATIC

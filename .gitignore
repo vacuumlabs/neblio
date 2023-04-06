@@ -78,4 +78,10 @@ boost*/
 openssl*/
 boost_build
 openssl_build
+qrencode-*
+qrencode_build
+curl_build
+curl-7.61.1*
 *.tar.gz
+*__pycache*
+*.pyc

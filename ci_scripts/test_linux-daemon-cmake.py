@@ -43,7 +43,8 @@ packages_to_install = \
 "python3-setuptools",
 "wget",
 "cmake",
-"nano"
+"nano",
+"libhidapi-dev"
 ]
 
 nci.install_packages_debian(packages_to_install)

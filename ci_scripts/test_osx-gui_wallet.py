@@ -36,6 +36,7 @@ nci.call_with_err_code('brew uninstall --ignore-dependencies qrencode || true')
 nci.call_with_err_code('brew uninstall --ignore-dependencies libsodium || true')
 nci.call_with_err_code('brew uninstall --ignore-dependencies icu4c || true')
 nci.call_with_err_code('brew uninstall --ignore-dependencies node@14 || true')
+nci.call_with_err_code('brew uninstall --ignore-dependencies hidapi || true')
 
 
 # pin dependencies we do not want to be auto-upgraded while installing the dependencies we need
@@ -76,7 +77,11 @@ nci.call_retry_on_fail('brew pin qrencode')
 #libsodium https://bintray.com/homebrew/bottles/download_file?file_path=libsodium-1.0.18_1.high_sierra.bottle.tar.gz
 nci.call_retry_on_fail('brew install --force https://assets.nebl.io/dependencies/macos/libsodium-1.0.18_1.high_sierra.bottle.tar.gz')
 nci.call_retry_on_fail('brew pin libsodium')
-
+#hidapi
+# TODO VL - upload bottle to assets.nebl.io?
+# nci.call_retry_on_fail('brew install --force https://assets.nebl.io/dependencies/macos/hidapi-0.13.1.high_sierra.bottle.tar.gz')
+nci.call_retry_on_fail('brew install hidapi')
+nci.call_retry_on_fail('brew pin hidapi')
 
 
 # force relinking
@@ -91,6 +96,7 @@ nci.call_with_err_code('brew unlink qrencode      && brew link --force --overwri
 nci.call_with_err_code('brew unlink libsodium     && brew link --force --overwrite libsodium')
 nci.call_with_err_code('brew unlink icu4c         && brew link --force --overwrite icu4c')
 nci.call_with_err_code('brew unlink node@14       && brew link --force --overwrite node@14')
+nci.call_with_err_code('brew unlink hidapi        && brew link --force --overwrite hidapi')
 
 # debug icu4c linking issues
 #nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
