@@ -52,6 +52,8 @@ nci.call_with_err_code('python ../build_scripts/CompileBoost-Linux.py')
 os.environ['PKG_CONFIG_PATH'] = os.path.join(working_dir, build_dir, 'curl_build/lib/pkgconfig/')
 os.environ['OPENSSL_INCLUDE_PATH'] = os.path.join(working_dir, build_dir, 'openssl_build/include/')
 os.environ['OPENSSL_LIB_PATH'] = os.path.join(working_dir, build_dir, 'openssl_build/lib/')
+os.environ['BOOST_INCLUDE_PATH'] = os.path.join(working_dir, build_dir, 'boost_build/')
+os.environ['BOOST_LIB_PATH'] = os.path.join(working_dir, build_dir, 'boost_build/stage/lib/')
 
 nci.call_with_err_code('ccache -s')
 

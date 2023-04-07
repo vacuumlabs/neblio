@@ -61,23 +61,27 @@ openssl_include_path = os.path.join(working_dir, build_dir, 'openssl_build/inclu
 openssl_lib_path = os.path.join(working_dir, build_dir, 'openssl_build/lib/')
 qrencode_lib_path = os.path.join(working_dir, build_dir, 'qrencode_build/lib/')
 qrencode_include_path = os.path.join(working_dir, build_dir, 'qrencode_build/include/')
+boost_include_path = os.path.join(working_dir, build_dir, 'boost_build/')
+boost_lib_path = os.path.join(working_dir, build_dir, 'boost_build/stage/lib/')
 
 os.environ['PKG_CONFIG_PATH'] = pkg_config_path
 os.environ['OPENSSL_INCLUDE_PATH'] = openssl_include_path
 os.environ['OPENSSL_LIB_PATH'] = openssl_lib_path
 os.environ['QRENCODE_INCLUDE_PATH'] = qrencode_include_path
 os.environ['QRENCODE_LIB_PATH'] = openssl_lib_path
+os.environ['BOOST_INCLUDE_PATH'] = boost_include_path
+os.environ['BOOST_LIB_PATH'] = boost_lib_path
 
 # prepend ccache to the path, necessary since prior steps prepend things to the path
 os.environ['PATH'] = '/usr/lib/ccache:' + os.environ['PATH']
 
 if (args.test):
-    nci.call_with_err_code('qmake "USE_UPNP=1" "USE_QRCODE=1" "RELEASE=1" "OPENSSL_INCLUDE_PATH=' + openssl_include_path + '" "OPENSSL_LIB_PATH=' + openssl_lib_path + '" "QRENCODE_LIB_PATH=' + qrencode_lib_path + '" "QRENCODE_INCLUDE_PATH=' + qrencode_include_path + '" "PKG_CONFIG_PATH=' + pkg_config_path + '" "NEBLIO_CONFIG += NoWallet" ../neblio-wallet.pro')
+    nci.call_with_err_code('qmake "USE_UPNP=1" "USE_QRCODE=1" "RELEASE=1" "OPENSSL_INCLUDE_PATH=' + openssl_include_path + '" "OPENSSL_LIB_PATH=' + openssl_lib_path + '" "QRENCODE_LIB_PATH=' + qrencode_lib_path + '" "QRENCODE_INCLUDE_PATH=' + qrencode_include_path + '" "BOOST_INCLUDE_PATH=' + boost_include_path + '" "BOOST_LIB_PATH=' + boost_lib_path + '" "PKG_CONFIG_PATH=' + pkg_config_path + '" "NEBLIO_CONFIG += NoWallet" ../neblio-wallet.pro')
     nci.call_with_err_code("make -j" + str(mp.cpu_count()))
     # run tests
     nci.call_with_err_code("./wallet/test/neblio-tests")
 else:
-    nci.call_with_err_code('qmake "USE_UPNP=1" "USE_QRCODE=1" "RELEASE=1" "OPENSSL_INCLUDE_PATH=' + openssl_include_path + '" "OPENSSL_LIB_PATH=' + openssl_lib_path + '" "QRENCODE_LIB_PATH=' + qrencode_lib_path + '" "QRENCODE_INCLUDE_PATH=' + qrencode_include_path + '" "PKG_CONFIG_PATH=' + pkg_config_path + '" ../neblio-wallet.pro')
+    nci.call_with_err_code('qmake "USE_UPNP=1" "USE_QRCODE=1" "RELEASE=1" "OPENSSL_INCLUDE_PATH=' + openssl_include_path + '" "OPENSSL_LIB_PATH=' + openssl_lib_path + '" "QRENCODE_LIB_PATH=' + qrencode_lib_path + '" "QRENCODE_INCLUDE_PATH=' + qrencode_include_path + '" "BOOST_INCLUDE_PATH=' + boost_include_path + '" "BOOST_LIB_PATH=' + boost_lib_path + '" "PKG_CONFIG_PATH=' + pkg_config_path + '" ../neblio-wallet.pro')
     nci.call_with_err_code("make -j" + str(mp.cpu_count()))
 
     file_name = '$(date +%Y-%m-%d)---' + os.environ['BRANCH'] + '-' + os.environ['COMMIT'][:7] + '---neblio-Qt---ubuntu16.04.tar.gz'
