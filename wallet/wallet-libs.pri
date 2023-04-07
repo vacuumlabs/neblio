@@ -345,6 +345,6 @@ contains(RELEASE, 1) {
 
 !windows:!macx {
     DEFINES += LINUX
-    LIBS += -lrt -ldl
     LIBS += -ludev
+    LIBS += -lrt -ldl
 }
