@@ -44,6 +44,8 @@ packages_to_install = \
 "wget",
 "cmake",
 "nano",
+"libudev-dev",
+"libusb-1.0-0-dev",
 "libhidapi-dev"
 ]
 

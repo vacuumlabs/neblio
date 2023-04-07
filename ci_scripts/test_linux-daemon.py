@@ -34,6 +34,8 @@ packages_to_install = \
 "zlib1g-dev",
 "lib32z1-dev",
 "libsodium-dev",
+"libudev-dev",
+"libusb-1.0-0-dev",
 "libhidapi-dev"
 ]
 
