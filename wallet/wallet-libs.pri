@@ -331,8 +331,7 @@ unix:LIBS        += -L/usr/lib64/libdb4/
     }
     # the testing whether system() has a zero exit code with the third parameter of system() doesn't work on all Qt versions
     libcURL_LIBS = $$system($$libcurlPkgconfCmd)
-    # OpenSSL linking is not necessary as it comes with curl
-    # openssl_LIBS = $$system($$opensslPkgconfCmd)
+    openssl_LIBS = $$system($$opensslPkgconfCmd)
     LIBS += $$libcURL_LIBS $$openssl_LIBS
 }
 
