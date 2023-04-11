@@ -55,7 +55,7 @@ contains(RELEASE, 1) {
 
     !windows:!macx {
         # Linux: static link
-        LIBS += -Wl,-Bstatic
+        LIBS += -Wl, --copy-dt-needed-entries -Bstatic
     }
 }
 
