@@ -55,7 +55,7 @@ contains(RELEASE, 1) {
 
     !windows:!macx {
         # Linux: static link
-        LIBS += -Wl, --copy-dt-needed-entries -Bstatic
+        LIBS += -Wl,-Bstatic
     }
 }
 
@@ -331,8 +331,10 @@ unix:LIBS        += -L/usr/lib64/libdb4/
     }
     # the testing whether system() has a zero exit code with the third parameter of system() doesn't work on all Qt versions
     libcURL_LIBS = $$system($$libcurlPkgconfCmd)
-    openssl_LIBS = $$system($$opensslPkgconfCmd)
+    # openssl_LIBS = $$system($$opensslPkgconfCmd)
+    LIBS += -Wl,--copy-dt-needed-entries
     LIBS += $$libcURL_LIBS $$openssl_LIBS
+    LIBS += -Wl,--no-copy-dt-needed-entries
 }
 
 contains(RELEASE, 1) {
