@@ -71,7 +71,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: nebliod
-        path: deploy/nebliod
+        path: ${{ env.BUILD_DIR }}/deploy/*nebliod*.tar.gz
 
 
   linux_wallet:
@@ -103,7 +103,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: neblio-qt
-        path: deploy/neblio-qt
+        path: ${{ env.BUILD_DIR }}/deploy/*neblio-Qt*.tar.gz
 
 
   # linux_wallet_test:
