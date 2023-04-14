@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ledger/bip32.h"
-#include "ledger/bytes.h"
-#include "ledger/transport.h"
-#include "ledger/tx.h"
+#include "bip32.h"
+#include "bytes.h"
+#include "transport.h"
+#include "tx.h"
 
 namespace ledger
 {
@@ -28,7 +28,7 @@ namespace ledger
 		void open();
 
 		std::tuple<bytes, std::string, bytes> GetPublicKey(const Bip32Path path, bool confirm);
-        std::vector<std::tuple<int, bytes>> SignTransaction(const Tx &tx, bool hasChange, const Bip32Path changePath,  const std::vector<Bip32Path> &signPaths, const std::vector<Utxo> &utxos);
+        std::vector<bytes> SignTransaction(const Tx &tx, bool hasChange, const Bip32Path changePath,  const std::vector<Bip32Path> &signPaths, const std::vector<Utxo> &utxos);
 
 		void close();
 
