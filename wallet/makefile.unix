@@ -80,7 +80,7 @@ LIBS += \
    -l crypto \
    -l z \
    -l sodium \
-   -l hidapi-libusb\
+   -l hidapi-libusb \
    -l usb-1.0
 
 ifdef NEBLIO_REST
