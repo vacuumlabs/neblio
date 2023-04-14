@@ -67,6 +67,11 @@ jobs:
         files: ${{ env.SOURCE_PATH }}
         repo-token: ${{ secrets.GHAT2 }}
         release-tag: ${{ env.RELEASE_TAG }}
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: nebliod
+        path: deploy/nebliod
 
 
   linux_wallet:
@@ -94,6 +99,11 @@ jobs:
         files: ${{ env.SOURCE_PATH }}
         repo-token: ${{ secrets.GHAT2 }}
         release-tag: ${{ env.RELEASE_TAG }}
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: neblio-qt
+        path: deploy/neblio-qt
 
 
   # linux_wallet_test:
