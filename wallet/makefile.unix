@@ -250,7 +250,7 @@ OBJS= \
     obj/logger.o                              \
     obj/blockreject.o                         \
     obj/blockmetadata.o                       \
-    obj/blockindexlrucache.o                  \    
+    obj/blockindexlrucache.o                  \
     obj/proposal.o                            \
     obj/ledger/bip32.o                        \
     obj/ledger/error.o                        \
@@ -359,13 +359,13 @@ clean:
 	-rm -f obj/*.o
 	-rm -f obj-test/*.o
 	-rm -f obj/ntp1/*.o
-    -rm -f obj/ledger/*.o
+	-rm -f obj/ledger/*.o
 	-rm -f obj/json/*.o
 	-rm -f obj/db/*.o
 	-rm -f obj/*.P
 	-rm -f obj-test/*.P
 	-rm -f obj/ntp1/*.P
-    -rm -f obj/ledger/*.P
+	-rm -f obj/ledger/*.P
 	-rm -f obj/json/*.P
 	-rm -f obj/build.h
 	-rm -rf obj
