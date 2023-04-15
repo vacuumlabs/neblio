@@ -295,6 +295,9 @@ macx: LIBS += -lcurl
     LIBS += -lusb-1.0
 } else {
     LIBS += -lhidapi
+    win32 {
+        LIBS += -lhid -lsetupapi
+    }
 }
 
 # For Fedora
