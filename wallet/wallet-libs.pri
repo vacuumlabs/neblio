@@ -291,6 +291,7 @@ windows:LIBS += -lboost_chrono$$BOOST_LIB_SUFFIX
 macx: LIBS += -lcurl
 
 macx: INCLUDEPATH += /usr/local/opt/hidapi/include
+macx: LIBS += -L/usr/local/opt/hidapi/lib
 
 !windows:!macx {
     LIBS += -lhidapi-libusb
