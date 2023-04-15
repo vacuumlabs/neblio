@@ -10,7 +10,7 @@ namespace ledger
 		return GetMessage().c_str();
 	}
 
-	std::string LedgerException::GetMessage(ErrorCode errorCode)
+	std::string LedgerException::GetMessage() const
 	{
 		switch (errorCode)
 		{
@@ -30,10 +30,5 @@ namespace ledger
 		default:
 			return "Unrecognized error";
 		}
-	}
-
-	std::string LedgerException::GetMessage() const
-	{
-		return LedgerException::GetMessage(errorCode);
 	}
 }

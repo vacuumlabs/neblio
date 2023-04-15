@@ -15,8 +15,6 @@ namespace ledger {
 
 	class LedgerException : public std::exception {
 	public:
-		static std::string GetMessage(ErrorCode errorCode);
-
 		LedgerException(ErrorCode errorCodeIn);
 		~LedgerException() noexcept override = default;
 
