@@ -1,3 +1,6 @@
+#ifndef LEDGERBRIDGE_H
+#define LEDGERBRIDGE_H
+
 #include "ledger/bip32.h"
 #include "ledger/tx.h"
 #include "ledger/bytes.h"
@@ -6,7 +9,6 @@
 
 #include "itxdb.h"
 #include "wallet.h"
-#include "script.h"
 
 #include <vector>
 
@@ -44,3 +46,5 @@ namespace ledgerbridge
             ledger::Tx ToLedgerTx(const CTransaction& tx);
     };
 }
+
+#endif // LEDGERBRIDGE_H
