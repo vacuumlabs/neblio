@@ -183,8 +183,8 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: neblio-qt-mac.zip
-        path: ${{ github.workspace }}/deploy/*neblio-Qt*.zip
+        name: neblio-qt.app
+        path: ${{ github.workspace }}/wallet/neblio-Qt.app
 
 
   # osx_test:
