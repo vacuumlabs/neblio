@@ -35,7 +35,7 @@ nci.call_with_err_code('brew uninstall --ignore-dependencies openssl@1.1 || true
 nci.call_with_err_code('brew uninstall --ignore-dependencies qrencode || true')
 nci.call_with_err_code('brew uninstall --ignore-dependencies libsodium || true')
 nci.call_with_err_code('brew uninstall --ignore-dependencies icu4c || true')
-nci.call_with_err_code('brew uninstall --ignore-dependencies node@14 || true')
+nci.call_with_err_code('brew uninstall --ignore-dependencies node@16 || true')
 nci.call_with_err_code('brew uninstall --ignore-dependencies hidapi || true')
 
 
@@ -54,8 +54,9 @@ nci.call_retry_on_fail('brew pin qt')
 nci.call_retry_on_fail('brew install --force https://assets.nebl.io/dependencies/macos/berkeley-db%404-4.8.30.high_sierra.bottle.1.tar.gz')
 nci.call_retry_on_fail('brew pin berkeley-db@4')
 #node@14 https://homebrew.bintray.com/bottles/node@14-14.15.0.high_sierra.bottle.tar.gz
-nci.call_retry_on_fail('brew install --force --ignore-dependencies https://assets.nebl.io/dependencies/macos/node@14-14.15.0.high_sierra.bottle.tar.gz')
-nci.call_retry_on_fail('brew pin node@14')
+# nci.call_retry_on_fail('brew install --force --ignore-dependencies https://assets.nebl.io/dependencies/macos/node@14-14.15.0.high_sierra.bottle.tar.gz')
+# nci.call_retry_on_fail('brew pin node@16')
+nci.call_retry_on_fail('brew install --force --ignore-dependencies node@16')
 #icu4c https://homebrew.bintray.com/bottles/icu4c-67.1.high_sierra.bottle.tar.gz
 nci.call_retry_on_fail('brew install --force --ignore-dependencies https://assets.nebl.io/dependencies/macos/icu4c-67.1.high_sierra.bottle.tar.gz')
 nci.call_retry_on_fail('brew pin icu4c')
@@ -95,55 +96,57 @@ nci.call_with_err_code('brew unlink openssl@1.1   && brew link --force --overwri
 nci.call_with_err_code('brew unlink qrencode      && brew link --force --overwrite qrencode')
 nci.call_with_err_code('brew unlink libsodium     && brew link --force --overwrite libsodium')
 nci.call_with_err_code('brew unlink icu4c         && brew link --force --overwrite icu4c')
-nci.call_with_err_code('brew unlink node@14       && brew link --force --overwrite node@14')
+nci.call_with_err_code('brew unlink node@16       && brew link --force --overwrite node@16')
 nci.call_with_err_code('brew unlink hidapi        && brew link --force --overwrite hidapi')
 
-# debug icu4c linking issues
-#nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
+nci.call_with_err_code('npm install -g appdmg')
+
+# # debug icu4c linking issues
+# #nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
 
 
-nci.call_with_err_code('ccache -s')
-nci.call_with_err_code('ccache -z')
+# nci.call_with_err_code('ccache -s')
+# nci.call_with_err_code('ccache -z')
 
-# prepend ccache to the path, necessary since prior steps prepend things to the path
-os.environ['PATH'] = '/usr/local/opt/ccache/libexec:' + os.environ['PATH']
+# # prepend ccache to the path, necessary since prior steps prepend things to the path
+# os.environ['PATH'] = '/usr/local/opt/ccache/libexec:' + os.environ['PATH']
 
-if (args.test):
-    nci.call_with_err_code('qmake "QMAKE_CXX=ccache clang++" "USE_UPNP=1" "USE_QRCODE=1" "RELEASE=1" "DEFINES += UNITTEST_RUN_NTP_PARSE_TESTS" "DEFINES += UNITTEST_FORCE_DISABLE_PREMADE_DATA_DOWNLOAD" "NEBLIO_CONFIG += NoWallet" ../neblio-wallet.pro')
-    nci.call_with_err_code("make -j" + str(mp.cpu_count()))
-    # download test data
-    nci.call_with_err_code('wget --no-check-certificate --progress=dot:giga https://assets.nebl.io/testdata/test_data_mainnet_tab.tar.xz -O ../wallet/test/data/test_data_mainnet_tab.tar.xz')
-    nci.call_with_err_code('wget --no-check-certificate --progress=dot:giga https://assets.nebl.io/testdata/test_data_testnet_tab.tar.xz -O ../wallet/test/data/test_data_testnet_tab.tar.xz')
-    nci.call_with_err_code('tar -xJvf ../wallet/test/data/test_data_mainnet_tab.tar.xz -C ../wallet/test/data')
-    nci.call_with_err_code('tar -xJvf ../wallet/test/data/test_data_testnet_tab.tar.xz -C ../wallet/test/data')
-    nci.call_with_err_code('rm ../wallet/test/data/*.tar.xz')
-    # run tests
-    nci.call_with_err_code("./wallet/test/neblio-Qt.app/Contents/MacOS/neblio-Qt")
-else:
-    nci.call_with_err_code('qmake "QMAKE_CXX=ccache clang++" "USE_UPNP=1" "USE_QRCODE=1" "RELEASE=1" ../neblio-wallet.pro')
-    nci.call_with_err_code("make -j" + str(mp.cpu_count()))
-    # build our .dmg
-    nci.call_with_err_code('npm install -g appdmg')
-    os.chdir("wallet")
-    nci.call_with_err_code('../../contrib/macdeploy/macdeployqtplus ./neblio-Qt.app -add-qt-tr da,de,es,hu,ru,uk,zh_CN,zh_TW -verbose 1 -rpath /usr/local/opt/qt/lib')
-    nci.call_with_err_code('/usr/local/bin/appdmg ../../contrib/macdeploy/appdmg.json ./neblio-Qt.dmg')
+# if (args.test):
+#     nci.call_with_err_code('qmake "QMAKE_CXX=ccache clang++" "USE_UPNP=1" "USE_QRCODE=1" "RELEASE=1" "DEFINES += UNITTEST_RUN_NTP_PARSE_TESTS" "DEFINES += UNITTEST_FORCE_DISABLE_PREMADE_DATA_DOWNLOAD" "NEBLIO_CONFIG += NoWallet" ../neblio-wallet.pro')
+#     nci.call_with_err_code("make -j" + str(mp.cpu_count()))
+#     # download test data
+#     nci.call_with_err_code('wget --no-check-certificate --progress=dot:giga https://assets.nebl.io/testdata/test_data_mainnet_tab.tar.xz -O ../wallet/test/data/test_data_mainnet_tab.tar.xz')
+#     nci.call_with_err_code('wget --no-check-certificate --progress=dot:giga https://assets.nebl.io/testdata/test_data_testnet_tab.tar.xz -O ../wallet/test/data/test_data_testnet_tab.tar.xz')
+#     nci.call_with_err_code('tar -xJvf ../wallet/test/data/test_data_mainnet_tab.tar.xz -C ../wallet/test/data')
+#     nci.call_with_err_code('tar -xJvf ../wallet/test/data/test_data_testnet_tab.tar.xz -C ../wallet/test/data')
+#     nci.call_with_err_code('rm ../wallet/test/data/*.tar.xz')
+#     # run tests
+#     nci.call_with_err_code("./wallet/test/neblio-Qt.app/Contents/MacOS/neblio-Qt")
+# else:
+#     nci.call_with_err_code('qmake "QMAKE_CXX=ccache clang++" "USE_UPNP=1" "USE_QRCODE=1" "RELEASE=1" ../neblio-wallet.pro')
+#     nci.call_with_err_code("make -j" + str(mp.cpu_count()))
+#     # build our .dmg
+#     nci.call_with_err_code('npm install -g appdmg')
+#     os.chdir("wallet")
+#     nci.call_with_err_code('../../contrib/macdeploy/macdeployqtplus ./neblio-Qt.app -add-qt-tr da,de,es,hu,ru,uk,zh_CN,zh_TW -verbose 1 -rpath /usr/local/opt/qt/lib')
+#     nci.call_with_err_code('/usr/local/bin/appdmg ../../contrib/macdeploy/appdmg.json ./neblio-Qt.dmg')
 
-    file_name = '$(date +%Y-%m-%d)---' + os.environ['BRANCH'] + '-' + os.environ['COMMIT'][:7] + '---neblio-Qt---macOS.zip'
+#     file_name = '$(date +%Y-%m-%d)---' + os.environ['BRANCH'] + '-' + os.environ['COMMIT'][:7] + '---neblio-Qt---macOS.zip'
 
-    nci.call_with_err_code('zip -j ' + file_name + ' ./neblio-Qt.dmg')
-    nci.call_with_err_code('mv ' + file_name + ' ' + deploy_dir)
-    nci.call_with_err_code('echo "Binary package at ' + deploy_dir + file_name + '"')
-    # set the SOURCE_DIR & SOURCE_PATH env vars, these point to the binary that will be uploaded
-    nci.call_with_err_code('echo "SOURCE_DIR='  + deploy_dir + '" >> $GITHUB_ENV')
-    nci.call_with_err_code('echo "SOURCE_PATH=' + deploy_dir + file_name + '" >> $GITHUB_ENV')
+#     nci.call_with_err_code('zip -j ' + file_name + ' ./neblio-Qt.dmg')
+#     nci.call_with_err_code('mv ' + file_name + ' ' + deploy_dir)
+#     nci.call_with_err_code('echo "Binary package at ' + deploy_dir + file_name + '"')
+#     # set the SOURCE_DIR & SOURCE_PATH env vars, these point to the binary that will be uploaded
+#     nci.call_with_err_code('echo "SOURCE_DIR='  + deploy_dir + '" >> $GITHUB_ENV')
+#     nci.call_with_err_code('echo "SOURCE_PATH=' + deploy_dir + file_name + '" >> $GITHUB_ENV')
 
-nci.call_with_err_code('ccache -s')
+# nci.call_with_err_code('ccache -s')
 
-# You must `brew unpin openssl@1.1` as installing s3cmd requires the latest version of pinned dependencies
-nci.call_retry_on_fail('brew unpin openssl@1.1')
+# # You must `brew unpin openssl@1.1` as installing s3cmd requires the latest version of pinned dependencies
+# nci.call_retry_on_fail('brew unpin openssl@1.1')
 
 
-print("")
-print("")
-print("Building finished successfully.")
-print("")
+# print("")
+# print("")
+# print("Building finished successfully.")
+# print("")

@@ -156,7 +156,7 @@ jobs:
 
 
   osx:
-    runs-on: macos-12
+    runs-on: macos-10.15
     steps:
     - uses: actions/checkout@v1
     - name: ccache
@@ -166,9 +166,9 @@ jobs:
         key: ${{ runner.OS }}-${{ env.CACHE_VER }}-osx-${{ github.sha }}-${{ github.run_id }}
         restore-keys: |
           ${{ runner.OS }}-${{ env.CACHE_VER }}-osx-
-    # - name: Switch Xcode Version
-    #   run: |
-    #     sudo xcode-select -s /Applications/Xcode_11.2.1.app/Contents/Developer
+    - name: Switch Xcode Version
+      run: |
+        sudo xcode-select -s /Applications/Xcode_11.2.1.app/Contents/Developer
     - name: Build neblio-Qt for macOS
       run: |
         python -u ci_scripts/test_osx-gui_wallet.py
