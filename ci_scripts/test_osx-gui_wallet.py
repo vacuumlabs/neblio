@@ -103,7 +103,9 @@ nci.call_with_err_code('brew unlink hidapi        && brew link --force --overwri
 nci.call_with_err_code('ls -al /usr/local/opt')
 nci.call_with_err_code('ls -al /usr/local/opt/icu4c')
 nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
-
+print("relinking icu4c lib")
+nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicudata.71.1.dylib /usr/local/opt/icu4c/lib/libicudata.67.dylib')
+nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
 
 nci.call_with_err_code('ccache -s')
 nci.call_with_err_code('ccache -z')
