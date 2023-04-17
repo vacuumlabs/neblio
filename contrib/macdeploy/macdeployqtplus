@@ -265,7 +265,7 @@ def copyFramework(framework, path, verbose):
     print "Testing ", toPath, " for icu4c" 
     if "libicu" in toPath and ".67.dylib" in toPath:
         print "File is icu4c" 
-        toPath = file.replace(".67.dylib", ".71.dylib")
+        toPath = toPath.replace(".67.dylib", ".71.dylib")
         print "To path changed to: ", toPath 
 
     if not os.path.exists(fromPath):
