@@ -57,6 +57,9 @@ nci.call_retry_on_fail('brew pin berkeley-db@4')
 # nci.call_retry_on_fail('brew install --force --ignore-dependencies https://assets.nebl.io/dependencies/macos/node@14-14.15.0.high_sierra.bottle.tar.gz')
 # nci.call_retry_on_fail('brew pin node@16')
 nci.call_retry_on_fail('brew install --force --ignore-dependencies node@16')
+#icu4c https://homebrew.bintray.com/bottles/icu4c-67.1.high_sierra.bottle.tar.gz
+nci.call_retry_on_fail('brew install icu4c')
+nci.call_retry_on_fail('brew pin icu4c')
 #boost https://homebrew.bintray.com/bottles/boost-1.72.0_3.high_sierra.bottle.tar.gz
 nci.call_retry_on_fail('brew install --force --ignore-dependencies https://assets.nebl.io/dependencies/macos/boost-1.72.0_3.high_sierra.bottle.tar.gz')
 nci.call_retry_on_fail('brew pin boost')
@@ -66,10 +69,6 @@ nci.call_retry_on_fail('brew pin miniupnpc')
 #curl https://bintray.com/homebrew/bottles/download_file?file_path=curl-7.67.0.high_sierra.bottle.tar.gz
 nci.call_retry_on_fail('brew install --force https://assets.nebl.io/dependencies/macos/curl-7.67.0.high_sierra.bottle.tar.gz')
 nci.call_retry_on_fail('brew pin curl')
-#icu4c https://homebrew.bintray.com/bottles/icu4c-67.1.high_sierra.bottle.tar.gz
-nci.call_with_err_code('curl https://raw.githubusercontent.com/Homebrew/homebrew-core/e2c833d326c45d9aaf4e26af6dd8b2f31564dc04/Formula/icu4c.rb > icu4c.rb')
-nci.call_with_err_code('brew install --force --ignore-dependencies ./icu4c.rb')
-nci.call_with_err_code('brew pin icu4c')
 #openssl https://bintray.com/homebrew/bottles/download_file?file_path=openssl%401.1-1.1.1d.high_sierra.bottle.tar.gz
 nci.call_retry_on_fail('brew install --force https://assets.nebl.io/dependencies/macos/openssl%401.1-1.1.1d.high_sierra.bottle.tar.gz')
 nci.call_retry_on_fail('brew pin openssl@1.1')
@@ -99,18 +98,7 @@ nci.call_with_err_code('brew unlink node@16       && brew link --force --overwri
 nci.call_with_err_code('brew unlink hidapi        && brew link --force --overwrite hidapi')
 
 # debug icu4c linking issues
-print("ls-ing icu4c lib")
-nci.call_with_err_code('ls -al /usr/local/opt')
-nci.call_with_err_code('ls -al /usr/local/opt/icu4c')
-nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
-# print("relinking icu4c lib")
-# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicudata.71.1.dylib /usr/local/opt/icu4c/lib/libicudata.67.dylib')
-# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicui18n.71.1.dylib /usr/local/opt/icu4c/lib/libicui18n.67.dylib')
-# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicuio.71.1.dylib /usr/local/opt/icu4c/lib/libicuio.67.dylib')
-# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicutest.71.1.dylib /usr/local/opt/icu4c/lib/libicutest.67.dylib')
-# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicutu.71.1.dylib /usr/local/opt/icu4c/lib/libicutu.67.dylib')
-# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicuuc.71.1.dylib /usr/local/opt/icu4c/lib/libicuuc.67.dylib')
-# nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
+# print("ls-ing icu4c lib")
 
 nci.call_with_err_code('ccache -s')
 nci.call_with_err_code('ccache -z')
