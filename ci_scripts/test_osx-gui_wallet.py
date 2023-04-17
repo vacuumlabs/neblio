@@ -100,7 +100,9 @@ nci.call_with_err_code('brew unlink node@16       && brew link --force --overwri
 nci.call_with_err_code('brew unlink hidapi        && brew link --force --overwrite hidapi')
 
 # debug icu4c linking issues
-#nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
+nci.call_with_err_code('ls -al /usr/local/opt')
+nci.call_with_err_code('ls -al /usr/local/opt/icu4c')
+nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
 
 
 nci.call_with_err_code('ccache -s')
@@ -124,19 +126,19 @@ else:
     nci.call_with_err_code('qmake "QMAKE_CXX=ccache clang++" "USE_UPNP=1" "USE_QRCODE=1" "RELEASE=1" ../neblio-wallet.pro')
     nci.call_with_err_code("make -j" + str(mp.cpu_count()))
     # build our .dmg
-    # nci.call_with_err_code('npm install -g appdmg')
-    # os.chdir("wallet")
-    # nci.call_with_err_code('../../contrib/macdeploy/macdeployqtplus ./neblio-Qt.app -add-qt-tr da,de,es,hu,ru,uk,zh_CN,zh_TW -verbose 1 -rpath /usr/local/opt/qt/lib')
-    # nci.call_with_err_code('/usr/local/bin/appdmg ../../contrib/macdeploy/appdmg.json ./neblio-Qt.dmg')
+    nci.call_with_err_code('npm install -g appdmg')
+    os.chdir("wallet")
+    nci.call_with_err_code('../../contrib/macdeploy/macdeployqtplus ./neblio-Qt.app -add-qt-tr da,de,es,hu,ru,uk,zh_CN,zh_TW -verbose 1 -rpath /usr/local/opt/qt/lib')
+    nci.call_with_err_code('/usr/local/bin/appdmg ../../contrib/macdeploy/appdmg.json ./neblio-Qt.dmg')
 
-    # file_name = '$(date +%Y-%m-%d)---' + os.environ['BRANCH'] + '-' + os.environ['COMMIT'][:7] + '---neblio-Qt---macOS.zip'
+    file_name = '$(date +%Y-%m-%d)---' + os.environ['BRANCH'] + '-' + os.environ['COMMIT'][:7] + '---neblio-Qt---macOS.zip'
 
-    # nci.call_with_err_code('zip -j ' + file_name + ' ./neblio-Qt.app')
-    # nci.call_with_err_code('mv ' + file_name + ' ' + deploy_dir)
-    # nci.call_with_err_code('echo "Binary package at ' + deploy_dir + file_name + '"')
+    nci.call_with_err_code('zip -j ' + file_name + ' ./neblio-Qt.dmg')
+    nci.call_with_err_code('mv ' + file_name + ' ' + deploy_dir)
+    nci.call_with_err_code('echo "Binary package at ' + deploy_dir + file_name + '"')
     # set the SOURCE_DIR & SOURCE_PATH env vars, these point to the binary that will be uploaded
-    # nci.call_with_err_code('echo "SOURCE_DIR='  + deploy_dir + '" >> $GITHUB_ENV')
-    # nci.call_with_err_code('echo "SOURCE_PATH=' + deploy_dir + file_name + '" >> $GITHUB_ENV')
+    nci.call_with_err_code('echo "SOURCE_DIR='  + deploy_dir + '" >> $GITHUB_ENV')
+    nci.call_with_err_code('echo "SOURCE_PATH=' + deploy_dir + file_name + '" >> $GITHUB_ENV')
 
 nci.call_with_err_code('ccache -s')
 
