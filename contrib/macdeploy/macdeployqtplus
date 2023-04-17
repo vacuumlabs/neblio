@@ -263,11 +263,10 @@ def copyFramework(framework, path, verbose):
     toPath = os.path.join(toDir, framework.binaryName)
 
     print "Testing ", toPath, " for icu4c" 
-    if "icu4c" in toPath:
+    if toPath.startswith("libicu") and toPath.endswith(".67.dylib"):
         print "File is icu4c" 
-        if file.startswith("libicu") and file.endswith(".67.dylib"):
-            toPath = file.replace(".67.dylib", ".71.dylib")
-            print "To path changed to: ", toPath 
+        toPath = file.replace(".67.dylib", ".71.dylib")
+        print "To path changed to: ", toPath 
 
     if not os.path.exists(fromPath):
         raise RuntimeError("No file at " + fromPath)
