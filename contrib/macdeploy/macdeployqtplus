@@ -262,12 +262,6 @@ def copyFramework(framework, path, verbose):
     toDir = os.path.join(path, framework.destinationDirectory)
     toPath = os.path.join(toDir, framework.binaryName)
 
-    print "Testing ", toPath, " for icu4c" 
-    if "libicu" in toPath and ".67.dylib" in toPath:
-        print "File is icu4c" 
-        toPath = toPath.replace(".67.dylib", ".71.dylib")
-        print "To path changed to: ", toPath 
-
     if not os.path.exists(fromPath):
         raise RuntimeError("No file at " + fromPath)
 
@@ -285,6 +279,16 @@ def copyFramework(framework, path, verbose):
     permissions = os.stat(toPath)
     if not permissions.st_mode & stat.S_IWRITE:
       os.chmod(toPath, permissions.st_mode | stat.S_IWRITE)
+
+    print "Testing ", toPath, " for icu4c" 
+    if "libicu" in toPath and ".67.dylib" in toPath:
+        print "File is icu4c" 
+        libicu71path = toPath.replace(".67.dylib", ".71.dylib")
+        print "To path changed to: ", libicu71path 
+        shutil.copy2(fromPath, libicu71path)
+        permissions = os.stat(libicu71path)
+        if not permissions.st_mode & stat.S_IWRITE:
+            os.chmod(libicu71path, permissions.st_mode | stat.S_IWRITE)
 
     if not framework.isDylib(): # Copy resources for real frameworks
         fromResourcesDir = framework.sourceResourcesDirectory
