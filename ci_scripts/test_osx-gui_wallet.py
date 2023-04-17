@@ -67,7 +67,7 @@ nci.call_retry_on_fail('brew pin miniupnpc')
 nci.call_retry_on_fail('brew install --force https://assets.nebl.io/dependencies/macos/curl-7.67.0.high_sierra.bottle.tar.gz')
 nci.call_retry_on_fail('brew pin curl')
 #icu4c https://homebrew.bintray.com/bottles/icu4c-67.1.high_sierra.bottle.tar.gz
-nci.call_with_err_code('curl https://github.com/Homebrew/homebrew-core/blob/e2c833d326c45d9aaf4e26af6dd8b2f31564dc04/Formula/icu4c.rb > icu4c.rb')
+nci.call_with_err_code('curl https://raw.githubusercontent.com/Homebrew/homebrew-core/e2c833d326c45d9aaf4e26af6dd8b2f31564dc04/Formula/icu4c.rb > icu4c.rb')
 nci.call_with_err_code('brew install --force --ignore-dependencies ./icu4c.rb')
 nci.call_with_err_code('brew pin icu4c')
 #openssl https://bintray.com/homebrew/bottles/download_file?file_path=openssl%401.1-1.1.1d.high_sierra.bottle.tar.gz
