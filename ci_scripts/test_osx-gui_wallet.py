@@ -58,7 +58,7 @@ nci.call_retry_on_fail('brew pin berkeley-db@4')
 # nci.call_retry_on_fail('brew pin node@16')
 nci.call_retry_on_fail('brew install --force --ignore-dependencies node@16')
 #icu4c https://homebrew.bintray.com/bottles/icu4c-67.1.high_sierra.bottle.tar.gz
-nci.call_retry_on_fail('brew install --force --ignore-dependencies https://assets.nebl.io/dependencies/macos/icu4c-67.1.high_sierra.bottle.tar.gz')
+nci.call_retry_on_fail('brew install --force --ignore-dependencies https://github.com/Homebrew/homebrew-core/blob/e2c833d326c45d9aaf4e26af6dd8b2f31564dc04/Formula/icu4c.rb')
 nci.call_retry_on_fail('brew pin icu4c')
 #boost https://homebrew.bintray.com/bottles/boost-1.72.0_3.high_sierra.bottle.tar.gz
 nci.call_retry_on_fail('brew install --force --ignore-dependencies https://assets.nebl.io/dependencies/macos/boost-1.72.0_3.high_sierra.bottle.tar.gz')
@@ -79,8 +79,6 @@ nci.call_retry_on_fail('brew pin qrencode')
 nci.call_retry_on_fail('brew install --force https://assets.nebl.io/dependencies/macos/libsodium-1.0.18_1.high_sierra.bottle.tar.gz')
 nci.call_retry_on_fail('brew pin libsodium')
 # hidapi
-# TODO VL - upload bottle to assets.nebl.io?
-# nci.call_retry_on_fail('brew install --force https://assets.nebl.io/dependencies/macos/hidapi-0.13.1.high_sierra.bottle.tar.gz')
 nci.call_retry_on_fail('brew install hidapi')
 nci.call_retry_on_fail('brew pin hidapi')
 
@@ -100,17 +98,18 @@ nci.call_with_err_code('brew unlink node@16       && brew link --force --overwri
 nci.call_with_err_code('brew unlink hidapi        && brew link --force --overwrite hidapi')
 
 # debug icu4c linking issues
+print("ls-ing icu4c lib")
 nci.call_with_err_code('ls -al /usr/local/opt')
 nci.call_with_err_code('ls -al /usr/local/opt/icu4c')
 nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
-print("relinking icu4c lib")
-nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicudata.71.1.dylib /usr/local/opt/icu4c/lib/libicudata.67.dylib')
-nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicui18n.71.1.dylib /usr/local/opt/icu4c/lib/libicui18n.67.dylib')
-nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicuio.71.1.dylib /usr/local/opt/icu4c/lib/libicuio.67.dylib')
-nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicutest.71.1.dylib /usr/local/opt/icu4c/lib/libicutest.67.dylib')
-nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicutu.71.1.dylib /usr/local/opt/icu4c/lib/libicutu.67.dylib')
-nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicuuc.71.1.dylib /usr/local/opt/icu4c/lib/libicuuc.67.dylib')
-nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
+# print("relinking icu4c lib")
+# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicudata.71.1.dylib /usr/local/opt/icu4c/lib/libicudata.67.dylib')
+# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicui18n.71.1.dylib /usr/local/opt/icu4c/lib/libicui18n.67.dylib')
+# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicuio.71.1.dylib /usr/local/opt/icu4c/lib/libicuio.67.dylib')
+# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicutest.71.1.dylib /usr/local/opt/icu4c/lib/libicutest.67.dylib')
+# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicutu.71.1.dylib /usr/local/opt/icu4c/lib/libicutu.67.dylib')
+# nci.call_with_err_code('ln -s /usr/local/opt/icu4c/lib/libicuuc.71.1.dylib /usr/local/opt/icu4c/lib/libicuuc.67.dylib')
+# nci.call_with_err_code('ls -al /usr/local/opt/icu4c/lib/')
 
 nci.call_with_err_code('ccache -s')
 nci.call_with_err_code('ccache -z')
