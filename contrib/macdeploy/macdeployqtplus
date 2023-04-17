@@ -285,6 +285,16 @@ def copyFramework(framework, path, verbose):
         if os.path.exists(fromResourcesDir):
             toResourcesDir = os.path.join(path, framework.destinationResourcesDirectory)
             shutil.copytree(fromResourcesDir, toResourcesDir)
+            print "Testing ", toResourcesDir, " for icu4c" 
+            if "icu4c" in toResourcesDir:
+                print "File is icu4c" 
+                for files in os.walk(toResourcesDir):
+                    for file in files:
+                        print "Icu4c file: ", file
+                        if file.startswith("libicu") and file.endswith(".67.dylib"):
+                            toFileName = file.replace(".67.dylib", ".71.dylib")
+                            print "Moving: ", file, " to: ", toFileName
+                            shutil.move(file, toFileName)
             if verbose >= 3:
                 print "Copied resources:", fromResourcesDir
                 print " to:", toResourcesDir
