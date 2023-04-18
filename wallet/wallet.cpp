@@ -2377,6 +2377,7 @@ bool CWallet::CreateTransaction(const ITxDB& txdb, const vector<pair<CScript, CA
                     nFeeRet += nMoveToFee;
                 }
 
+                CLedgerKey ledgerChangeKey;
                 if (nChange > 0 || ntp1TokenChangeExists) {
                     // Fill a vout to ourself
                     // TODO: pass in scriptChange instead of reservekey so
@@ -2386,19 +2387,27 @@ bool CWallet::CreateTransaction(const ITxDB& txdb, const vector<pair<CScript, CA
                     // coin control: send change to custom address
                     if (coinControl && !boost::get<CNoDestination>(&coinControl->destChange)) {
                         scriptChange.SetDestination(coinControl->destChange);
+                        if (wtxNew.fLedgerTx) {
+                            auto destinationKeyID = boost::get<CKeyID>(coinControl->destChange);
+                            if (!GetLedgerKey(destinationKeyID, ledgerChangeKey)) {
+                                NLog.write(b_sev::err, "Ledger key for change address not found!");
+                                CreateErrorMsg(errorMsg, "Ledger key for change address not found!");
+                                return false;
+                            }
+                        }
                     } else if (wtxNew.fLedgerTx) {
                         auto destinationKeyID = boost::get<CKeyID>(ledgerInputDestination.get());
-                        if (IsLedgerChangeKey(destinationKeyID)) {
+                        if (IsLedgerChangeKey(destinationKeyID) &&
+                            GetLedgerKey(destinationKeyID, ledgerChangeKey)) {
                             scriptChange.SetDestination(ledgerInputDestination.get());
                         } else {
-                            CLedgerKey changeKey;
-                            if (!this->GetOtherLedgerKey(destinationKeyID, changeKey, false)) {
+                            if (!this->GetOtherLedgerKey(destinationKeyID, ledgerChangeKey, false)) {
                                 NLog.write(b_sev::err, "Ledger change key not found!");
                                 CreateErrorMsg(errorMsg, "Ledger change key not found!");
                                 return false;
                             }
 
-                            scriptChange.SetDestination(changeKey.vchPubKey.GetID());
+                            scriptChange.SetDestination(ledgerChangeKey.vchPubKey.GetID());
                         }
                     }
                     // no coin control: send change to newly generated address
@@ -2545,10 +2554,11 @@ bool CWallet::CreateTransaction(const ITxDB& txdb, const vector<pair<CScript, CA
                 if (wtxNew.fLedgerTx) {
                     try {
                         ledgerbridge::LedgerBridge ledgerBridge;
-                        ledgerBridge.SignTransaction(txdb, *this, wtxNew, ledgerBridgeUtxos,
-                                                     nChange > 0);
+                        ledgerBridge.SignTransaction(txdb, *this, wtxNew, ledgerBridgeUtxos, nChange > 0,
+                                                     ledgerChangeKey);
                     } catch (const ledger::LedgerException& e) {
-                        CreateErrorMsg(errorMsg, "Error while signing Ledger transaction.");
+                        CreateErrorMsg(errorMsg,
+                                       "Error while signing Ledger transaction." + e.GetMessage());
                         return false;
                     }
                 }
@@ -3778,7 +3788,7 @@ LabelAvailability CWallet::CheckLabelAvailability(const std::string& label, bool
 std::string CWallet::ImportLedgerKey(int account, int index)
 {
     ledgerbridge::LedgerBridge ledgerBridge;
-    auto                       accountPubKeyBytes = ledgerBridge.GetPublicKey(account, false);
+    auto                       accountPubKeyBytes = ledgerBridge.GetAccountPublicKey(account, false);
     auto paymentPubKeyBytes = ledgerBridge.GetPublicKey(account, false, index, true);
     auto changePubKeyBytes  = ledgerBridge.GetPublicKey(account, true, index, false);
 
